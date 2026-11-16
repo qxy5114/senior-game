@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>遗迹学徒：符文迷踪</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="stage">
+  <canvas id="game" width="800" height="600"></canvas>
+
+  <div class="hud">
+    <div class="mana-panel" id="manaPanel">
+      <div class="bottle">
+        <div class="cork"></div>
+        <div class="neck"></div>
+        <div class="flask">
+          <div class="liquid" id="liquid"></div>
+          <div class="bubbles"><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
+      <div class="mana-info">
+        <div class="mana-label">魔力</div>
+        <div class="mana-value"><span id="manaValue">100</span><small>/100</small></div>
+        <div class="dash-pips" id="dashPips"></div>
+        <div class="frost-badge empty" id="frostBadge">冰霜 x0</div>
+      </div>
+    </div>
+    <div class="rune-panel">
+      <div class="rune-head"><span>符 文</span><b id="runeCount">0 / 3</b></div>
+      <div class="rune-track" id="runeTrack"></div>
+    </div>
+  </div>
+
+  <div class="title">遗迹学徒 · 符文迷踪</div>
+  <div class="chapter" id="chapterLabel"></div>
+  <div class="combo" id="comboBadge">
+    <div class="combo-text" id="comboText">COMBO x2</div>
+    <div class="combo-bar"><i id="comboBar"></i></div>
+  </div>
+  <div class="hint" id="hint">方向键移动 · 空格冲刺（-10 魔力）· R 重开</div>
+  <div class="chips" id="talentChips"></div>
+
+  <div class="cover" id="cover">
+    <div class="cover-inner">
+      <div class="cover-eyebrow">THE RUNE APPRENTICE</div>
+      <h1 class="cover-title">遗迹学徒</h1>
+      <div class="cover-sub">符文迷踪</div>
+      <div class="cover-ornament"></div>
+      <p class="cover-desc">提着幽蓝的提灯，穿过古堡与迷雾森林。<br>收集散落各处的符文萤火，别让黑暗中的身影靠近。</p>
+      <button class="cover-start" id="coverStart">开始游戏</button>
+      <div class="cover-keys">方向键 移动 · 空格 冲刺 · F 提灯 · Q 冰霜 · M 静音 · R 重开</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="ending-particles" id="endingParticles"></div>
+    <div class="over-title" id="overTitle"></div>
+    <div class="over-sub" id="overSub"></div>
+    <div class="talent-cards" id="talentCards"></div>
+    <button id="restartBtn">重新开始</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
