@@ -303,7 +303,11 @@
     font-variant-numeric: tabular-nums;
   }
   .rune-track {
-    display: flex; gap: 7px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    max-width: 167px;
+    justify-content: flex-end;
   }
   .slot-wrap {
     width: 22px; height: 25px;

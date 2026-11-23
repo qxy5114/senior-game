@@ -32,10 +32,11 @@
     1: {
       title: '第一关 · 古堡外围',
       theme: 'castle',
-      target: 3,
-      common: 3,
+      target: 5,
+      common: 5,
       rare: 0,
       frost: 0,
+      active: 5,
       bounds: { left: 190, right: 610, top: 190, bottom: 460 },
       walled: true,
       fog: false,
@@ -54,10 +55,11 @@
     2: {
       title: '第二关 · 迷雾森林',
       theme: 'forest',
-      target: 6,
-      common: 4,
-      rare: 2,
+      target: 10,
+      common: 7,
+      rare: 3,
       frost: 0,
+      active: 6,
       bounds: { left: 44, right: 756, top: 120, bottom: 560 },
       walled: false,
       fog: true,
@@ -77,10 +79,11 @@
     3: {
       title: '第三关 · 古堡大厅',
       theme: 'castlehall',
-      target: 9,
-      common: 7,
-      rare: 2,
+      target: 15,
+      common: 12,
+      rare: 3,
       frost: 2,
+      active: 6,
       bounds: { left: 44, right: 756, top: 120, bottom: 560 },
       walled: false,
       fog: false,
@@ -100,10 +103,11 @@
     4: {
       title: '第四关 · 魔王之厅',
       theme: 'throne',
-      target: 12,
-      common: 9,
+      target: 18,
+      common: 15,
       rare: 3,
       frost: 0,
+      active: 6,
       bounds: { left: 44, right: 756, top: 120, bottom: 560 },
       walled: false,
       fog: true,
@@ -1022,57 +1026,86 @@
     });
   }
 
-  function createRunes(ch) {
-    const b = ch.bounds;
-    const sx = (b.left + b.right) / 2;
-    const sy = (b.top + b.bottom) / 2;
-    const gap = ch.walled ? 66 : 76;
-    const runes = [];
+  function buildRuneQueue(ch) {
+    const queue = [];
 
-    const groups = [];
-    if (ch.common > 0) groups.push({ def: COMMON_RUNE, count: ch.common, rare: false, kind: 'rune' });
-    if (ch.rare > 0) groups.push({ def: RARE_RUNE, count: ch.rare, rare: true, kind: 'rune' });
-    if (ch.frost > 0) groups.push({ def: FROST_RUNE, count: ch.frost, rare: false, kind: 'frost' });
-
-    groups.forEach(function (group) {
-      for (let i = 0; i < group.count; i++) {
-        let pos = null;
-
-        for (let attempt = 0; attempt < 300; attempt++) {
-          const x = rand(b.left + 24, b.right - 24);
-          const y = rand(b.top + 24, b.bottom - 24);
-
-          if (Math.hypot(x - sx, y - sy) < 95) continue;
-          if (runes.some(function (r) { return Math.hypot(x - r.x, y - r.y) < gap; })) continue;
-
-          pos = { x: x, y: y };
-          break;
-        }
-
-        if (!pos) {
-          pos = { x: rand(b.left + 30, b.right - 30), y: rand(b.top + 30, b.bottom - 30) };
-        }
-
-        runes.push({
-          x: pos.x,
-          y: pos.y,
-          size: group.def.size,
-          gain: group.def.gain,
-          fill: group.def.fill,
-          stroke: group.def.stroke,
-          glow: group.def.glow,
-          glowFaint: group.def.glowFaint,
-          solid: group.def.solid,
-          rare: group.rare,
-          kind: group.kind,
-          symbol: Math.floor(Math.random() * 3),
-          seed: Math.random() * TAU,
-          alive: true
-        });
+    function pushGroup(def, rare, kind, count) {
+      for (let i = 0; i < count; i++) {
+        queue.push({ def: def, rare: rare, kind: kind });
       }
-    });
+    }
 
-    return runes;
+    pushGroup(COMMON_RUNE, false, 'rune', ch.common);
+    pushGroup(RARE_RUNE, true, 'rune', ch.rare);
+    pushGroup(FROST_RUNE, false, 'frost', ch.frost);
+
+    // 洗牌，让金符与雪花符分散在不同波次出现
+    for (let i = queue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = queue[i];
+      queue[i] = queue[j];
+      queue[j] = tmp;
+    }
+
+    return queue;
+  }
+
+  function takeRuneSpot() {
+    const g = game;
+    const b = g.bounds;
+    const gap = g.walled ? 66 : 76;
+    const p = g.player;
+
+    for (let attempt = 0; attempt < 400; attempt++) {
+      const x = rand(b.left + 24, b.right - 24);
+      const y = rand(b.top + 24, b.bottom - 24);
+
+      // 新符文不要直接刷在玩家脚下
+      if (Math.hypot(x - p.x, y - p.y) < 130) continue;
+      if (g.runes.some(function (r) { return r.alive && Math.hypot(x - r.x, y - r.y) < gap; })) continue;
+      if (g.thorns.some(function (t) { return Math.hypot(x - t.x, y - t.y) < 48; })) continue;
+      if (g.campfires.some(function (f) { return Math.hypot(x - f.x, y - f.y) < 50; })) continue;
+      if (g.altar && Math.hypot(x - g.altar.x, y - g.altar.y) < 80) continue;
+      if (g.portal && Math.hypot(x - g.portal.x, y - g.portal.y) < 80) continue;
+
+      return { x: x, y: y };
+    }
+
+    return { x: rand(b.left + 30, b.right - 30), y: rand(b.top + 30, b.bottom - 30) };
+  }
+
+  function spawnRune(entry) {
+    const g = game;
+    const def = entry.def;
+    const spot = takeRuneSpot();
+
+    g.runes.push({
+      x: spot.x,
+      y: spot.y,
+      size: def.size,
+      gain: def.gain,
+      fill: def.fill,
+      stroke: def.stroke,
+      glow: def.glow,
+      glowFaint: def.glowFaint,
+      solid: def.solid,
+      rare: entry.rare,
+      kind: entry.kind,
+      symbol: Math.floor(Math.random() * 3),
+      seed: Math.random() * TAU,
+      alive: true
+    });
+  }
+
+  // 场上始终保持固定数量的符文，拾取后从队列补充
+  function refillRunes() {
+    const g = game;
+    let active = g.runes.filter(function (r) { return r.alive; }).length;
+
+    while (active < g.runeLimit && g.runeQueue.length) {
+      spawnRune(g.runeQueue.shift());
+      active += 1;
+    }
   }
 
   function createThorns(ch, runes) {
@@ -1210,7 +1243,10 @@
       player: createPlayer(bounds, maxCharges)
     };
 
-    game.runes = createRunes(ch);
+    game.runes = [];
+    game.runeQueue = buildRuneQueue(ch);
+    game.runeLimit = ch.active || ch.target;
+    refillRunes();
     game.thorns = createThorns(ch, game.runes);
     game.campfires = createCampfires(ch, game.runes);
     game.scene = createScene(ch.theme);
@@ -1847,12 +1883,14 @@
   function checkRunes() {
     const g = game;
     const box = playerRect();
+    let picked = false;
 
     g.runes.forEach(function (r) {
       if (!r.alive) return;
       if (!circleRectHit(r.x, r.y, r.size * 0.9, box)) return;
 
       r.alive = false;
+      picked = true;
 
       // 雪花符文：获得冰霜新星充能，不计入收集进度
       if (r.kind === 'frost') {
@@ -1892,6 +1930,8 @@
         });
       }
     });
+
+    if (picked) refillRunes();
   }
 
   /* ========================= 绘制 ========================= */
